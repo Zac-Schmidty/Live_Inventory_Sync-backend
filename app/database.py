@@ -6,16 +6,23 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Get DATABASE_URL from environment variable (Railway sets this)
+# Get DATABASE_URL from environment variable
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable is not set")
+
 # Handle Railway's SSL requirement
-if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 engine = create_engine(
     DATABASE_URL,
-    pool_pre_ping=True
+    pool_pre_ping=True,
+    # Add these parameters for Railway
+    connect_args={
+        "sslmode": "require"
+    }
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
