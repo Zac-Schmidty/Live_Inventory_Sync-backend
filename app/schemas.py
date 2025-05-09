@@ -13,6 +13,8 @@ class ProductCreate(ProductBase):
 
 class Product(ProductBase):
     id: int
+    previous_inventory: int
+    inventory_change: int
     last_synced: datetime
 
     class Config:

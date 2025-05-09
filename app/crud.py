@@ -16,8 +16,12 @@ def get_products(
 ) -> List[models.Product]:
     return db.query(models.Product).offset(skip).limit(limit).all()
 
-def create_product(db: Session, product: schemas.ProductCreate) -> models.Product:
-    db_product = models.Product(**product.model_dump())
+def create_product(db: Session, product: schemas.ProductCreate, initial_inventory: int = 0) -> models.Product:
+    db_product = models.Product(
+        **product.model_dump(),
+        previous_inventory=initial_inventory,
+        inventory_change=0
+    )
     db.add(db_product)
     db.commit()
     db.refresh(db_product)
