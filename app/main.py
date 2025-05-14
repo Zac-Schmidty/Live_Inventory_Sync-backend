@@ -58,6 +58,14 @@ async def read_products(
     products = crud.get_products(db, skip=skip, limit=limit)
     return products
 
+@app.get("/products/low-stock", response_model=List[schemas.Product], tags=["products"])
+async def get_low_stock_products(
+    threshold: int = 10,
+    db: Session = Depends(get_db)
+):
+    """Get products with low inventory"""
+    return crud.get_low_inventory_products(db, threshold=threshold)
+
 @app.get("/products/{product_id}", response_model=schemas.Product, tags=["products"])
 async def read_product(product_id: int, db: Session = Depends(get_db)):
     """Get a specific product by ID"""
@@ -97,14 +105,6 @@ async def get_inventory_metrics(db: Session = Depends(get_db)):
 async def check_health(db: Session = Depends(get_db)):
     """Check system health including sync status"""
     return utils.check_sync_health(db)
-
-@app.get("/products/low-stock", response_model=List[schemas.Product], tags=["products"])
-async def get_low_stock_products(
-    threshold: int = 10, 
-    db: Session = Depends(get_db)
-):
-    """Get products with low inventory"""
-    return crud.get_low_inventory_products(db, threshold=threshold)
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
