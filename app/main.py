@@ -16,7 +16,11 @@ app = FastAPI(title="Shopify Sync API")
 # Updated CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://live-inventory.xyz", "http://localhost:3000"],  # For development, update with your frontend URL in production
+    allow_origins=[
+        "http://localhost:3000",                    # Local development
+        "https://www.live-inventory.xyz",           # Your production frontend
+        "https://live-inventory.xyz",               # Without www
+    ],
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods including OPTIONS
     allow_headers=[
