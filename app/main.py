@@ -20,11 +20,12 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods including OPTIONS
     allow_headers=[
-        "Content-Type",
-        "Authorization",
-        "Access-Control-Allow-Origin",
-        "Access-Control-Allow-Methods",
-        "Access-Control-Allow-Headers",
+        "strict-origin-when-cross-origin",
+        "content-type",
+        "authorization",
+        "access-control-allow-origin",
+        "access-control-allow-methods",
+        "access-control-allow-headers",
         "*"
     ],
     expose_headers=["*"],
