@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
@@ -6,19 +6,29 @@ from . import crud, models, schemas, utils
 from .database import SessionLocal, engine
 from .webhook_routes import router as webhook_router
 from .sync_jobs import get_sync_service, MockShopifySync
+from fastapi.responses import JSONResponse
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Shopify Sync API")
 
-# Add CORS middleware
+# Updated CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For development, update with your frontend URL in production
+    allow_origins=["https://live-inventory.xyz", "http://localhost:3000"],  # For development, update with your frontend URL in production
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allows all methods including OPTIONS
+    allow_headers=[
+        "Content-Type",
+        "Authorization",
+        "Access-Control-Allow-Origin",
+        "Access-Control-Allow-Methods",
+        "Access-Control-Allow-Headers",
+        "*"
+    ],
+    expose_headers=["*"],
+    max_age=600,  # Cache preflight requests for 10 minutes
 )
 
 # Dependency for database session
@@ -52,12 +62,19 @@ async def read_product(product_id: int, db: Session = Depends(get_db)):
     return product
 
 # Sync endpoints
-@app.post("/sync/trigger", tags=["sync"])
-async def trigger_sync(db: Session = Depends(get_db)):
+@app.options("/sync/trigger")
+async def sync_options():
+    return {}  # Return empty response for OPTIONS request
+
+@app.post("/sync/trigger")
+async def trigger_sync(request: Request, db: Session = Depends(get_db)):
     """Manually trigger a sync with Shopify"""
-    sync_service = get_sync_service()
-    result = await sync_service.sync_products(db)
-    return result
+    try:
+        sync_service = get_sync_service()
+        result = await sync_service.sync_products(db)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/sync/status", tags=["sync"])
 async def get_sync_status(db: Session = Depends(get_db)):
@@ -83,3 +100,15 @@ async def get_low_stock_products(
 ):
     """Get products with low inventory"""
     return crud.get_low_inventory_products(db, threshold=threshold)
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": str(exc.detail)},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
